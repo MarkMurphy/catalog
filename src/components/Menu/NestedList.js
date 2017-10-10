@@ -7,7 +7,7 @@ import {style as menuStyle} from './Menu';
 import PropTypes from 'prop-types';
 import Radium from 'radium';
 
-const NestedList = ({theme, pages, title}, {router}) => {
+const NestedList = ({theme, pages, title, filtered}, {router}) => {
   const collapsed = !pages
     .map((d) => d.path && router.isActive(d.path))
     .filter(Boolean)
@@ -22,11 +22,11 @@ const NestedList = ({theme, pages, title}, {router}) => {
     <div>
       <Link
         to={pages[0].path}
-        style={{...currentStyle.link, ...(collapsed ? {} : currentStyle.activeLink)}}
+        style={{...currentStyle.link, ...((collapsed || filtered) ? {} : currentStyle.activeLink)}}
         activeStyle={{...currentStyle.link, ...currentStyle.activeLink}} >
         { title }
       </Link>
-      { !collapsed &&
+      { (!collapsed || filtered) &&
         <ul style={{...currentStyle.list, ...currentStyle.listNested, padding: 0}}>
           { pages.map(page => <ListItem key={page.id} page={page} nested theme={theme} />) }
         </ul>

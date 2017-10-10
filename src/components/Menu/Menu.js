@@ -3,8 +3,12 @@ import React from 'react';
 import {pagesShape} from '../../CatalogPropTypes';
 import {heading, text, getFontSize} from '../../styles/typography';
 import Link from '../Link/Link';
-
+import Search from './Search';
 import ListItem from './ListItem';
+
+function escapeRegExp(str) {
+  return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
 
 export function style(theme) {
   const logoBottomMargin = getFontSize(theme, 5);
@@ -72,12 +76,54 @@ export function style(theme) {
 }
 
 class Menu extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      searchText: ''
+    }
+
+    this.handleSearch = this.handleSearch.bind(this)
+  }
+
+  handleSearch({target}) {
+    this.setState({
+      searchText: target.value.trim()
+    });
+  }
+
+  getFilteredListItems() {
+    const { pageTree } = this.props
+    const { searchText } = this.state
+
+    const pattern = new RegExp(`${escapeRegExp(searchText)}`, 'i')
+
+    const reduce = (result, page) => {
+      if (page.hideFromMenu) return result; 
+
+      let node = { ...page, filtered: !!searchText.length }
+      let pages = page.pages
+
+      if (Array.isArray(pages)) {
+        node.pages = pages = pages.reduce(reduce, [])
+      }
+
+      if ((pages && pages.length) || pattern.test(node.title)) {
+        result.push(node)
+      }
+
+      return result
+    }
+
+    return pageTree.reduce(reduce, [])
+  }
+
   render() {
     const {theme, pageTree, logoSrc, title, basePath} = this.props;
 
     const currentStyle = style(theme);
 
     const titleString = title ? title : '';
+    const filteredPageTree = this.getFilteredListItems() 
 
     return (
       <div style={currentStyle.bar} >
@@ -89,8 +135,11 @@ class Menu extends React.Component {
                 : <div style={currentStyle.title}>{titleString}</div> }
             </h1>
           </Link>
+
+          <Search onChange={this.handleSearch} placeholder="Search" theme={theme} />
+
           <ul style={currentStyle.list}>
-            { pageTree.filter((page) => !page.hideFromMenu).map((page) => <ListItem key={page.id} page={page} theme={theme} />) }
+            { filteredPageTree.map((page) => <ListItem key={page.id} page={page} theme={theme} />) }
           </ul>
         </div>
         <div style={currentStyle.info}>
